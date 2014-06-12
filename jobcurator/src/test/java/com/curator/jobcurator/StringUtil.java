@@ -3,7 +3,7 @@ package com.curator.jobcurator;
 public class StringUtil {
 
 	public static void main(String[] args) {
-		System.out.println(StringScramble("rkqodlw", "worled"));
+		System.out.println(StringScramble("rkqodlw"	, "world"));
 	}
 	
 	public static boolean StringScramble(String str1, String str2) {
