@@ -15,10 +15,14 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class Master implements Watcher {
-	
-	private ZooKeeper zk;
+	 private static final Logger LOG = LoggerFactory.getLogger(Master.class);	
+	 
+	 private ZooKeeper zk;
 	
 	private String hostPort;
 	
@@ -65,6 +69,12 @@ public class Master implements Watcher {
 				break;
 			case OK:
 				System.out.println("parent created");
+				break;
+			case NODEEXISTS:
+				System.out.println("already exits");
+				break;
+			default:
+				System.out.println("wrong" + KeeperException.create(Code.get(rc),path));
 			}
 		}
 	};
