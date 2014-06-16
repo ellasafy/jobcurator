@@ -29,9 +29,49 @@ public class Master implements Watcher {
 	public StringCallback stringCb = new StringCallback() {
 			@Override
 			 public void processResult(int rc, String path, Object ctx, String name) {
-				 System.out.println(Code.get(rc) + " with path : " + path);
+				 switch (Code.get(rc)) {
+				 case CONNECTIONLOSS:
+					 try {
+						 checkMaster();
+					 }catch (Exception e) {
+						 e.printStackTrace();
+					 }
+			
+					 return;
+				 case OK:
+					 isLeader = true;
+					 System.out.println("ok");
+					 break;
+			     default:
+			    	 isLeader = false;
+						 
+				 }
+				 System.out.println("i am " + (isLeader ? " " : " not ") + "the leader");
 			 }
 	};
+	
+	public void createParent(String path, byte[] data) {
+		zk.create(path, data, Ids.OPEN_ACL_UNSAFE, 
+				CreateMode.PERSISTENT,
+				createParentCallback, data);
+	}
+	
+	public StringCallback createParentCallback  = new StringCallback() {
+		@Override
+		public void processResult(int rc,String path, Object ctx, String name) {
+			switch (Code.get(rc)) {
+			case CONNECTIONLOSS:
+				createParent(path, (byte[]) ctx);
+				break;
+			case OK:
+				System.out.println("parent created");
+			}
+		}
+	};
+	
+	public void bootstrap() {
+		
+	}
 	
 	public boolean checkMaster() throws  InterruptedException, KeeperException{
 		while (true) {
@@ -61,21 +101,9 @@ public class Master implements Watcher {
 	}
 	
 	public void runForMaster() throws InterruptedException,KeeperException {
-		while (true) {
-		try {
-			zk.create("/master", serverId.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-			isLeader = true;
-			break;
-			
-		} catch (NodeExistsException e) {
-		    isLeader = false;
-		    break;
-		} catch (ConnectionLossException e) {
-			e.printStackTrace();
-		}
-		
-		if (checkMaster())break;
-		}
+//			zk.create("/master", serverId.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+			zk.create("/master", serverId.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL,
+					stringCb,stringCb);
 		
 	}
 	
