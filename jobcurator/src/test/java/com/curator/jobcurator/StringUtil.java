@@ -3,7 +3,13 @@ package com.curator.jobcurator;
 public class StringUtil {
 
 	public static void main(String[] args) {
-		System.out.println(StringScramble("rkqodlw"	, "world"));
+		try {
+			assert "a".equals("b");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("over");
 	}
 	
 	public static boolean StringScramble(String str1, String str2) {
