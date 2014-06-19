@@ -1,6 +1,9 @@
 package com.curator.jobcurator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.AsyncCallback.StringCallback;
@@ -16,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Worker implements Watcher{
-	 private static final Logger LOG = LoggerFactory.getLogger(Worker.class);	
+	 private static final Logger LOG = LoggerFactory.getLogger(Worker.class);
+	 private List<ZooKeeper> list = new ArrayList<ZooKeeper>();
+	 private List<ZooKeeper> zkPool = Collections.synchronizedList(list);
 
 	 private ZooKeeper zk;
 	 String hostPort;
@@ -28,6 +33,9 @@ public class Worker implements Watcher{
 	 
 	 public void startZK() throws IOException {
 		 zk = new ZooKeeper(hostPort, 15000, this);
+		 if (zk != null) {
+			 zkPool.add(zk);
+		 }
 	 }
 	 
 	 @Override

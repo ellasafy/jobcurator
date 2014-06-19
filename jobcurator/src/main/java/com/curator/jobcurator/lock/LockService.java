@@ -3,6 +3,8 @@ package com.curator.jobcurator.lock;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.zookeeper.AsyncCallback.StatCallback;
 import org.apache.zookeeper.AsyncCallback.StringCallback;
@@ -21,40 +23,50 @@ import com.curator.jobcurator.Client;
 
 public class LockService {
 	private static final Logger LOG = LoggerFactory.getLogger(LockService.class);	
-	private CountDownLatch lock = new CountDownLatch(0);
-	private ExecutorService ex = Executors.newFixedThreadPool(1);
+	private CountDownLatch lockWait = new CountDownLatch(0);
+//	private ExecutorService ex = Executors.newFixedThreadPool(1);
 	private Client client;
 	
-	public void doService(final String name, LockCallback cb){
-		synchronized(this) {
+	public  void doService(final String name, LockCallback cb){
+		Lock lock = new ReentrantLock();
+		lock.lock();
+		try {
+			LOG.info("start.....................");
 			client = Client.getInstance();
-			lock = new CountDownLatch(1);
+			lockWait = new CountDownLatch(1);
 			
-			ex.execute(new Runnable() {
+			new Thread(new Runnable() {
 				public void run() {
+					try {
+						doLock("/lock/"+name);
+						System.out.println("thead ok");
+					} catch (Exception e) {
+						LOG.error("get an error from thread" + Thread.currentThread().getName());
+					}
 					
 				}
-			});
+			}).start();
 			
 			try {
 				//wait for lock
-				lock.await();
+				lockWait.await();
 				//after lock service, do process
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("got lock " + name + " start to process");
 				}
-				cb.process();
+				cb.process(client);
 			} catch (InterruptedException e) {
-				
+				LOG.error(e + "");
 			}
 			client.closeZK();
+		}finally {
+			lock.unlock();
 		}
 	}
 	
-	public void doLock(final String name) {
-		
-		client.getZk().create("/lock/"+name, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL,
-				lockCallBack, name);
+	protected void doLock(final String path) {
+		client.getZk().create(path, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL,
+				lockCallBack, path);
 				
 	}
 	
@@ -66,22 +78,22 @@ public class LockService {
         		 doLock((String)ctx);
         		 break;
         	 case OK:
-        		 lock.countDown();
+        		 lockWait.countDown();
         		 break;
         	 case  NODEEXISTS:
         		 //public void exists(final String path, Watcher watcher,
 //                 StatCallback cb, Object ctx)
-        		 checkLockExists(path, ctx);
+        		 doLock((String)ctx);
         		 break;
         	default:
-        		LOG.error(KeeperException.create(rc).getMessage());
+        		LOG.error("lock callback " + KeeperException.create(rc).getMessage());
         		doLock((String)ctx);
         		break;
         	 }
 		}
     };
     
-    private void checkLockExists(final String path, Object ctx) {
+    protected void checkLockExists(final String path, Object ctx) {
     	client.getZk().exists(path, lockWatcher, lockStatCallback,ctx);
     }
     //public void processResult(int rc, String path, Object ctx, Stat stat);
@@ -91,7 +103,7 @@ public class LockService {
     		if (Code.get(rc) == Code.NONODE) {
     			doLock((String)ctx);
     		} else {
-    			
+    		   LOG.error(path + " is locked, waiting...");	
     		}
     	}
     };
@@ -100,8 +112,9 @@ public class LockService {
     private Watcher lockWatcher = new Watcher() {
     	@Override
     	public void process(WatchedEvent e) {
+    		System.out.println("watcher ..................." + e.getPath());
     		if (e.getType() == EventType.NodeDeleted) {
-    			
+    			doLock(e.getPath());
     		}
     	}
     };

@@ -1,5 +1,10 @@
 package com.curator.jobcurator;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -14,8 +19,9 @@ import org.slf4j.LoggerFactory;
 public class Client implements Watcher {
 	 private static final Logger LOG = LoggerFactory.getLogger(Client.class);	
 	private ZooKeeper zk;
-	
-	private final static String hostPort = "";
+	 private List<ZooKeeper> list = new ArrayList<ZooKeeper>();
+	 private List<ZooKeeper> zkPool = Collections.synchronizedList(list);
+	private final static String hostPort = "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183";
 	
 	public static Client getInstance() {
 	    return new Client(hostPort);
@@ -25,17 +31,26 @@ public class Client implements Watcher {
 		try {
 			starZK();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("build connection error, " + e);
 		}
 	}
 	
-	public void starZK() throws Exception {
-		setZk(new ZooKeeper(hostPort,15000, this));
+	public void starZK() throws IOException {
+		zk = new ZooKeeper(hostPort,15000, this);
+		if (zk != null) {
+			zkPool.add(zk);
+		}
 	}
 	
 	public void closeZK() {
 		try {
+			System.out.println("close zk............................");
+			
 			zk.close();
+			if (zk == null) {
+				zkPool.remove(zk);
+				System.out.println("============xxx" + zkPool.size() + zkPool);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
