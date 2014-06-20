@@ -13,7 +13,11 @@ public enum State {
 	
 	OVER(2),
 	
-	ERROR(3),
+	EXPECTION(3),
+	
+	FAIL(4),
+	
+	ERROR(5),
 	
 	STOP(6),
 	
@@ -35,5 +39,10 @@ public enum State {
 	public static State get(int status) {
          return lookup.get(status);
 	}
+	
+	public String toString() {
+		return this.name() + " :" + this.status;
+	}
+	
 
 }

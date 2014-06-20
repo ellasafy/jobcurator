@@ -32,7 +32,7 @@ public class LockTest extends Thread{
 		System.out.println(Thread.currentThread().getName() + " ....start");
 	      LockService lock = new LockService();
 	         lock.doService("localhost", new LockCallback() {
-	        	public void  process() {
+	        	public void  process(Client client) {
 	        		System.out.println("get u****************************" + Thread.currentThread().getName());
 	        		list.add(Thread.currentThread().getName());
 	        		ss.incrementAndGet();
