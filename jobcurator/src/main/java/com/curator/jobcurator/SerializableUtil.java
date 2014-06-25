@@ -19,7 +19,6 @@ public class SerializableUtil {
 			writer.writeObject(object);
 			data = outputStream.toByteArray();
 		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		return data;
 	}
@@ -34,9 +33,7 @@ public class SerializableUtil {
 			ObjectInputStream reader = new ObjectInputStream(inputStream);
 			object = reader.readObject();
 		} catch (IOException e) {
-			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		}
 		return object;
 	}

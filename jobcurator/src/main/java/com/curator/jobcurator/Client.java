@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class Client implements Watcher {
 	 private static final Logger LOG = LoggerFactory.getLogger(Client.class);	
-	private ZooKeeper zk;
+	 private ZooKeeper zk;
 	 private List<ZooKeeper> list = new ArrayList<ZooKeeper>();
 	 private List<ZooKeeper> zkPool = Collections.synchronizedList(list);
 	private final static String hostPort = "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183";

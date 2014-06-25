@@ -21,21 +21,22 @@ import org.slf4j.LoggerFactory;
 
 import com.curator.jobcurator.Client;
 
-public class LockService {
+public class LockService<T> {
 	private static final Logger LOG = LoggerFactory.getLogger(LockService.class);	
 	private CountDownLatch lockWait = new CountDownLatch(0);
-//	private ExecutorService ex = Executors.newFixedThreadPool(1);
+	private ExecutorService ex = Executors.newFixedThreadPool(1);
 	private Client client;
 	
-	public  void doService(final String name, LockCallback cb){
+	public  T doService(final String name, LockCallback<T> cb){
 		Lock lock = new ReentrantLock();
 		lock.lock();
+		T ret =null;
 		try {
 			LOG.info("start.....................");
 			client = Client.getInstance();
 			lockWait = new CountDownLatch(1);
 			
-			new Thread(new Runnable() {
+			ex.execute(new Runnable() {
 				public void run() {
 					try {
 						doLock("/lock/"+name);
@@ -45,7 +46,7 @@ public class LockService {
 					}
 					
 				}
-			}).start();
+			});
 			
 			try {
 				//wait for lock
@@ -54,12 +55,13 @@ public class LockService {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("got lock " + name + " start to process");
 				}
-				cb.process(client);
+				ret = cb.process(client);
 			} catch (InterruptedException e) {
 				LOG.error(e + "");
 			}
-			client.closeZK();
+			return ret;
 		}finally {
+			client.closeZK();
 			lock.unlock();
 		}
 	}

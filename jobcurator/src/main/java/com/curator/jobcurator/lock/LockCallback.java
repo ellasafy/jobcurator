@@ -2,7 +2,7 @@ package com.curator.jobcurator.lock;
 
 import com.curator.jobcurator.Client;
 
-public interface LockCallback {
+public interface LockCallback<T> {
 
-	public void process(Client client);
+	public T process(Client client);
 }
