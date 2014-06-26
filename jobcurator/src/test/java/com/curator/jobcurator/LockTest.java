@@ -29,16 +29,16 @@ public class LockTest extends Thread{
        System.out.println(cur + ": " + now + ": " + (now -cur));
 	}
 	public void run() {
-		System.out.println(Thread.currentThread().getName() + " ....start");
-	      LockService lock = new LockService();
-	         lock.doService("localhost", new LockCallback() {
-	        	public void  process(Client client) {
-	        		System.out.println("get u****************************" + Thread.currentThread().getName());
-	        		list.add(Thread.currentThread().getName());
-	        		ss.incrementAndGet();
-	        		latch.countDown();
-	        	}
-	         }
-	         );
+//		System.out.println(Thread.currentThread().getName() + " ....start");
+//	      LockService lock = new LockService();
+//	         lock.doService("localhost", new LockCallback() {
+//	        	public void  process(Client client) {
+//	        		System.out.println("get u****************************" + Thread.currentThread().getName());
+//	        		list.add(Thread.currentThread().getName());
+//	        		ss.incrementAndGet();
+//	        		latch.countDown();
+//	        	}
+//	         }
+//	         );
 	}
 }
