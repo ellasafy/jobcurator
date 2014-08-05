@@ -1,8 +1,9 @@
 package com.curator.jobcurator.lock;
 
-import com.curator.jobcurator.Client;
+import org.apache.curator.framework.CuratorFramework;
+
 
 public interface LockCallback<T> {
 
-	public T process(Client client);
+	public T process(CuratorFramework client);
 }

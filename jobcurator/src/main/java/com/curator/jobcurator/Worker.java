@@ -25,7 +25,7 @@ public class Worker implements Watcher{
 
 	 private ZooKeeper zk;
 	 String hostPort;
-	 String serverId = "192.168.21.133";
+	 String serverId = "localhost";
 	 
 	 public Worker(String hostPort) {
 		 this.hostPort = hostPort;
@@ -45,7 +45,7 @@ public class Worker implements Watcher{
 	 
 	 
 	 public void register() {
-		 zk.create("/workers/worker-" + serverId, "Idle".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL,
+		 zk.create("/task/local", "Idle".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL,
 				 createWorkerCallback, null);
 	 }
 	 
@@ -61,6 +61,7 @@ public class Worker implements Watcher{
 				 break;
 			 case OK:
 				 LOG.info("registered successfully: " + serverId);
+//				 watchChildren();
 				 break;
 			 case NODEEXISTS:
 				 LOG.info("already regitered: " + serverId);
@@ -90,9 +91,7 @@ public class Worker implements Watcher{
 	 private String status;
 	 
 	  synchronized private void updateStatus(String name,String status) {
-		 if (status == this.status) {
-			 zk.setData("/workers/" + name, status.getBytes(), -1, statusUpdateCallback, status);
-		 }
+			 zk.setData("/task/local", status.getBytes(), -1, statusUpdateCallback, status);
 	 }
 	  
 	 public void setStatus(String status) {
@@ -100,10 +99,32 @@ public class Worker implements Watcher{
 		 updateStatus("path", status);
 	 }
 	 
+	 public void watchChildren() {
+		 try {
+			 System.out.println("get children");
+			 zk.getChildren("/task", taskWatcher);
+		 } catch (Exception e) {
+			 e.printStackTrace();
+		 }
+		 
+	     
+	 }
+	 
+	 
+	 Watcher taskWatcher = new Watcher() {
+		public void process(WatchedEvent e) {
+			System.out.println(e.getPath());
+			System.out.println(e.getType());
+			System.out.println(e.getState());
+		}
+	 };
 	 public static void main(String[] args) throws Exception {
 		 Worker w = new Worker("localhost:2181");
 		 w.startZK();
+		 w.watchChildren();
 		 w.register();
+		 w.watchChildren();
+		 w.updateStatus("", "namwe");
 		 Thread.sleep(3000);
 	 }
 }

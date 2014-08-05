@@ -5,16 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.AsyncCallback.StringCallback;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import com.curator.jobcurator.Client;
 import com.curator.jobcurator.Constant.JkPath;
 import com.curator.jobcurator.Message;
 import com.curator.jobcurator.SerializableUtil;
@@ -44,18 +42,18 @@ public class JobService{
 		final String zkJobName = JkPath.JOB + jobName;
 		final String zkTaskName = JkPath.TASK + jobName;
 		
-		LockService<Map<String, Object>> service = new LockService<Map<String, Object>>();
-		Map<String, Object> ret = service.doService(jobName, new LockCallback<Map<String, Object>>() {
-			private Client client;
+		LockService<Map<String, Object>> service = new LockService<Map<String, Object>>(jobName);
+		Map<String, Object> ret = service.doWork(new LockCallback<Map<String, Object>>() {
+			private CuratorFramework client;
+			
 			final Map<String, Object> rsl = new HashMap<String, Object>();
 			byte[] jobData;
 			@Override
-			public Map<String, Object> process(Client cl) {
+			public Map<String, Object> process(CuratorFramework cl) {
 				if (client == null) {
 					client = cl;
 				}
 	
-				
 			    String host = getHostProc();
 			    if (host == null) {
 			    	rsl.put("returnCode", Message.JOBERROR);
@@ -65,17 +63,80 @@ public class JobService{
 				jobData = SerializableUtil.writeObject(job);
 				
 				//开始添加任务
-				createJob(zkJobName, jobName);
+				try {
+					createJob(zkJobName, jobName);
+				}catch (Exception e) {
+					rsl.put("returnCode", Message.JOBERROR);
+				}
 				
 				return rsl;
 			}
+			
+	
+			private void createJob(final String zkJobName, final String jobName) throws Exception {
+				client.getZookeeperClient().getZooKeeper().create(zkJobName, jobData, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, createJobCb, jobName);
+			}
+			
+			StringCallback createJobCb = new StringCallback() {
+				@Override
+				public void processResult(int rc, String path, Object ctx, String name) {
+				    switch (Code.get(rc)) {
+				    case OK:
+				    	try {
+				    	   	addTask(zkTaskName, jobName);
+				    	}catch(Exception e) {
+				    		
+				    	};
+				 
+				    	break;
+				    case NODEEXISTS:
+				    	rsl.put("returnCode", Message.JOBEXISTS);
+				    	break;
+				    default :
+				    	try {
+				    		createJob(path, (String)ctx);
+				    	}catch (Exception e) {
+				    		
+				    	}
+				        ;
+				    	break;
+				    }
+				}
+			};
+		   
+			//add job to /jk/slaves
+			private void  addTask(final String zkTaskName, final String jobName) throws Exception{
+				client.getZookeeperClient().getZooKeeper().create(zkTaskName, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, taskCallback, jobName);
+			}
+			
+			StringCallback taskCallback = new StringCallback() {
+				@Override
+				public void processResult(int rc, String path, Object ctx, String name) {
+				    switch (Code.get(rc)) {
+				    case OK:
+				    	rsl.put("returnCode", Message.JOBADDSUCCESS);
+				    	break;
+				    case NODEEXISTS:
+				    	break;
+				    default:
+				    	try {
+				    		addTask(zkTaskName, (String)ctx);
+				    	}catch (Exception e) {
+				    		
+				    	}
+				    	;
+				    	break;
+				    }
+				}
+			};
+			
 			
 			//获取job执行的host
 			private String getHostProc() {
 				List<String> hosts = null;
 				try {
-					hosts = client.getZk().getChildren(JkPath.MASTER, null);
-				
+//					hosts = client.getZk().getChildren(JkPath.MASTER, null);
+					hosts = client.getChildren().forPath(JkPath.MASTER);
 				} catch (KeeperException e) {
 					if (e.code() == Code.CONNECTIONLOSS) {
 							
@@ -92,47 +153,6 @@ public class JobService{
 				}
 					
 			}
-			private void createJob(final String zkJobName, final String jobName) {
-				client.getZk().create(zkJobName, jobData, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, createJobCb, jobName);
-			}
-			
-			StringCallback createJobCb = new StringCallback() {
-				@Override
-				public void processResult(int rc, String path, Object ctx, String name) {
-				    switch (Code.get(rc)) {
-				    case OK:
-				    	addTask(zkTaskName, jobName);
-				    	break;
-				    case NODEEXISTS:
-				    	rsl.put("returnCode", Message.JOBEXISTS);
-				    	break;
-				    default :
-				    	createJob(path, (String)ctx);
-				    	break;
-				    }
-				}
-			};
-		   
-			//add job to /jk/slaves
-			private void  addTask(final String zkTaskName, final String jobName) {
-				client.getZk().create(zkTaskName, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, taskCallback, jobName);
-			}
-			
-			StringCallback taskCallback = new StringCallback() {
-				@Override
-				public void processResult(int rc, String path, Object ctx, String name) {
-				    switch (Code.get(rc)) {
-				    case OK:
-				    	rsl.put("returnCode", Message.JOBADDSUCCESS);
-				    	break;
-				    case NODEEXISTS:
-				    	break;
-				    default:
-				    	addTask(zkTaskName, (String)ctx);
-				    	break;
-				    }
-				}
-			};
 			
 		});
 		
