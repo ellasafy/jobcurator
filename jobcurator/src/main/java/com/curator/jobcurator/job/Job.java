@@ -1,38 +1,22 @@
 package com.curator.jobcurator.job;
 
-import java.io.Serializable;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+
 
 import com.curator.jobcurator.State;
 
-public class Job implements Serializable{
+public class Job {
 	
-	private static final long serialVersionUID = 2000L;
-	private int id;
-	private long createdTime;
-	private long startTime;
-	private long endTime;
-	private String name;
-	private String procHostName;
-	private Configuration configuration;
-	private State status;
-	private int priority;
-
-	public int getId() {
+	private Integer id;
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 
 	public long getCreatedTime() {
 		return createdTime;
-	}
-	
-	public String getFormatCreatedTime() {
-	    return toDateStr(createdTime);
 	}
 
 	public void setCreatedTime(long createdTime) {
@@ -42,10 +26,6 @@ public class Job implements Serializable{
 	public long getStartTime() {
 		return startTime;
 	}
-	
-	public String getFormatStartTime() {
-	    return toDateStr(startTime);
-	}
 
 	public void setStartTime(long startTime) {
 		this.startTime = startTime;
@@ -53,10 +33,6 @@ public class Job implements Serializable{
 
 	public long getEndTime() {
 		return endTime;
-	}
-	
-	public String getFormatEndTime() {
-	    return toDateStr(endTime);
 	}
 
 	public void setEndTime(long endTime) {
@@ -71,67 +47,12 @@ public class Job implements Serializable{
 		this.name = name;
 	}
 
-	public String getProcHostName() {
-		return procHostName;
+	public String getHostName() {
+		return hostName;
 	}
 
-	public void setProcHostName(String procHostName) {
-		this.procHostName = procHostName;
-	}
-
-	public Configuration getConfiguration() {
-		return configuration;
-	}
-
-	public void setConfiguration(Configuration configuration) {
-		this.configuration = configuration;
-	}
-	
-
-	public int getPriority() {
-		return priority;
-	}
-
-	public void setPriority(int priority) {
-		this.priority = priority;
-	}
-
-	public Job(int id, long createdTime, long startTime, long endTime,String name, String procHostName, Configuration configuration) {
-		this.id = id;
-		this.createdTime = createdTime;
-		this.startTime = startTime;
-		this.endTime = endTime;
-		this.name = name;
-		this.procHostName = procHostName;
-		this.configuration = configuration;
-		this.setStatus(State.INIT);
-	}
-
-	public Job() {
-	}
-	
-	public String toString() {
-		StringBuffer sb = new StringBuffer();
-//		private ConcurrentHashMap<String, Task> taskMap;
-		sb.append("job -- > \n");
-		sb.append("id           \t="+id+"\n");
-		sb.append("createdTime  \t="+toDateStr(createdTime)+"\n");
-		sb.append("startTime    \t="+toDateStr(startTime)+"\n");
-		sb.append("endTime      \t="+toDateStr(endTime)+"\n");
-		sb.append("endTime      \t="+toDateStr(endTime)+"\n");
-		sb.append("name         \t="+name+"\n");
-		sb.append("procHostName \t="+procHostName+"\n");
-		sb.append("configuration\t="+configuration+"\n");
-		sb.append("status       \t="+getStatus()+"\n");
-		return sb.toString();
-	}
-	public String toDateStr(long time) {
-		return toDateStr(time,"yyyy-MM-dd HH:mm:ss");
-	}
-	public String toDateStr(long time,String pattern){
-		Calendar cal = Calendar.getInstance();
-		cal.setTimeInMillis(time);
-		return new SimpleDateFormat(pattern).format(cal.getTime());
+	public void setHostName(String hostName) {
+		this.hostName = hostName;
 	}
 
 	public State getStatus() {
@@ -141,5 +62,91 @@ public class Job implements Serializable{
 	public void setStatus(State status) {
 		this.status = status;
 	}
+
+	private long createdTime;
+	private long startTime;
+	private long endTime;
+	private String name;
+	private String hostName;
+	private State status;
+	
+	
+	public Job(Integer id, long createdTime, long startTime, long endTime, String name, String hostName, State status) {
+		this.id = id;
+		this.createdTime = createdTime;
+		this.startTime = startTime;
+		this.endTime = endTime;
+		this.name = name;
+		this.hostName = hostName;
+		this.status = status;
+	}
+
+	public static class Builder {
+		private Integer id;
+		private long createdTime;
+		private long startTime;
+		private long endTime;
+		private String name;
+		private String hostName;
+		private State status;
+		
+		public Job builder() {
+			if (this.name == null) {
+				throw new IllegalArgumentException("job name cannot empty");
+			}
+			if (this.createdTime == 0L) {
+				throw new IllegalArgumentException("job createdTime cannot empty");
+			}
+			
+			return new Job(id, createdTime, startTime, endTime, name, hostName, status);
+		}
+		
+		public Builder Id(Integer id) {
+			this.id = id;
+			return this;
+		}
+		
+		public Builder CreatedTime(long createdTime) {
+			this.createdTime = createdTime;
+			return this;
+		}
+		
+		public Builder StartTime(long startTime) {
+			this.startTime = startTime;
+			return this;
+		}
+		
+		public Builder EndTime(long endTime) {
+			this.endTime = endTime;
+			return this;
+		}
+		
+		public Builder Name(String name) {
+			this.name = name;
+			return this;
+		}
+		
+		public Builder HostName(String hostName) {
+			this.hostName = hostName;
+			return this;
+		}
+		
+		public Builder Status(State status) {
+			this.status = status;
+			return this;
+		}
+		
+	
+	}
+
+	@Override
+	public String toString() {
+		return "Job [id=" + id + ", createdTime=" + createdTime
+				+ ", startTime=" + startTime + ", endTime=" + endTime
+				+ ", name=" + name + ", hostName=" + hostName + ", status="
+				+ status + "]";
+	}
+	
+
 
 }
